@@ -4,6 +4,7 @@ local input_f = love.filesystem.read("input.svg")
 local input = tove.newGraphics(input_f)
 
 local mode = "normal"
+local targetId = 1
 local temp = ""
 
 local stickers = {}
@@ -39,6 +40,8 @@ function fileSelected(name)
 		print("adding sticker \""..temp.."\" failed: "..err)
 		return
 	end
+	stickers[stickercount+1].x = 0
+	stickers[stickercount+1].y = 0
 	stickers[stickercount+1].img = tove.newGraphics(stickers[stickercount+1].fd)
 
 	stickercount = stickercount + 1
@@ -46,6 +49,7 @@ end
 
 function love.keypressed(key, scan, isRepeat)
 	if isRepeat == true then return end
+	print("key: "..key)
 	if mode == "text" then
 		if key == "backspace" then
 			temp = temp:sub(1, #temp - 1)
@@ -54,14 +58,42 @@ function love.keypressed(key, scan, isRepeat)
 			fileSelected(temp)
 		end
 	end
+	if mode == "move" then
+		if key == "up" then
+			stickers[targetId].y = stickers[targetId].y - 10
+		elseif key == "down" then
+			stickers[targetId].y = stickers[targetId].y + 10
+		elseif key == "left" then
+			stickers[targetId].x = stickers[targetId].x - 10
+		elseif key == "right" then
+			stickers[targetId].x = stickers[targetId].x + 10
+		end
+
+		if tonumber(key) ~= nil then
+			if tonumber(key) < stickercount then
+				targetId = tonumber(key)
+			end
+		end
+
+		if key == "escape" then
+			mode = "normal"
+		end
+	end
+	if key == "q" then
+		love.event.quit()
+	end
 end
 
 function love.textinput(t)
-	if mode == "text" then
+	print("text: "..t)
+	if mode == "text" then -- special code for textbox input
 		temp = temp..t
-	elseif mode == "normal" then
+	else
+		-- mode switching
 		if t == "o" then
 			openFile()
+		elseif t == "m" and stickercount > 0 then
+			mode = "move"
 		end
 	end
 end
@@ -79,9 +111,9 @@ function love.draw()
 				end
 			end
 		end
-	elseif mode == "normal" then
+	elseif mode == "normal" or mode == "move" then
 		for k, j in ipairs(stickers) do
-			stickers[k].img:draw()
+			stickers[k].img:draw(stickers[k].x, stickers[k].y)
 		end
 	end
 end
